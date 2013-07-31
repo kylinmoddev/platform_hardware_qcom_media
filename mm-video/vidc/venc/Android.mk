@@ -46,7 +46,7 @@ libmm-venc-def += -D_ANDROID_ICS_
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_QCOM_DISPLAY_VARIANT),caf)
-DISPLAY := display-caf
+DISPLAY := display
 else
 DISPLAY := display
 endif
@@ -56,12 +56,12 @@ libmm-venc-inc      += bionic/libstdc++/include
 libmm-venc-inc      += $(LOCAL_PATH)/inc
 libmm-venc-inc      += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 libmm-venc-inc      += $(OMX_VIDEO_PATH)/vidc/common/inc
-libmm-venc-inc      += hardware/qcom/media-caf/mm-core/inc
-libmm-venc-inc      += hardware/qcom/media-caf/libstagefrighthw
+libmm-venc-inc      += hardware/qcom/media/mm-core/inc
+libmm-venc-inc      += hardware/qcom/media/libstagefrighthw
 libmm-venc-inc      += hardware/qcom/$(DISPLAY)/libgralloc
 libmm-venc-inc      += frameworks/native/include/media/hardware
 libmm-venc-inc      += frameworks/native/include/media/openmax
-libmm-venc-inc      += hardware/qcom/media-caf/libc2dcolorconvert
+libmm-venc-inc      += hardware/qcom/media/libc2dcolorconvert
 libmm-venc-inc      += hardware/qcom/$(DISPLAY)/libcopybit
 libmm-venc-inc      += frameworks/av/include/media/stagefright
 
@@ -96,7 +96,7 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_QCOM_DISPLAY_VARIANT),caf)
-DISPLAY := display-caf
+DISPLAY := display
 else
 DISPLAY := display
 endif
@@ -105,7 +105,7 @@ mm-venc-test720p-inc            := $(TARGET_OUT_HEADERS)/mm-core
 mm-venc-test720p-inc            += $(LOCAL_PATH)/inc
 mm-venc-test720p-inc            += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 mm-venc-test720p-inc            += $(OMX_VIDEO_PATH)/vidc/common/inc
-mm-venc-test720p-inc            += hardware/qcom/media-caf/mm-core/inc
+mm-venc-test720p-inc            += hardware/qcom/media/mm-core/inc
 mm-venc-test720p-inc            += hardware/qcom/$(DISPLAY)/libgralloc
 
 LOCAL_MODULE                    := mm-venc-omx-test720p
@@ -135,7 +135,7 @@ venc-test-inc                   += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/in
 LOCAL_MODULE                    := mm-video-encdrv-test
 LOCAL_MODULE_TAGS               := debug
 LOCAL_C_INCLUDES                := $(venc-test-inc)
-LOCAL_C_INCLUDES                += hardware/qcom/media-caf/mm-core/inc
+LOCAL_C_INCLUDES                += hardware/qcom/media/mm-core/inc
 LOCAL_ADDITIONAL_DEPENDENCIES   := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 LOCAL_PRELINK_MODULE            := false
 
