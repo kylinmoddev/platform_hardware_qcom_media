@@ -687,7 +687,16 @@ void omx_video::process_event_cb(void *ctxt, unsigned char id)
         }
 
         break;
-
+      case OMX_COMPONENT_GENERATE_LTRUSE_FAILED:
+        DEBUG_PRINT_ERROR("ERROR: OMX_COMPONENT_GENERATE_LTRUSE_FAILED!");
+        if(pThis->m_pCallbacks.EventHandler)
+        {
+          DEBUG_PRINT_ERROR("Sending QOMX_ErrorLTRUseFailed, p2 = 0x%x", p2);
+          pThis->m_pCallbacks.EventHandler(&pThis->m_cmp, pThis->m_app_data,
+                                           OMX_EventError, QOMX_ErrorLTRUseFailed,
+                                           NULL, NULL);
+        }
+        break;
       case OMX_COMPONENT_GENERATE_HARDWARE_ERROR:
         DEBUG_PRINT_ERROR("\nERROR: OMX_COMPONENT_GENERATE_HARDWARE_ERROR!\n");
         pThis->omx_report_error ();
@@ -1617,24 +1626,25 @@ OMX_ERRORTYPE  omx_video::get_parameter(OMX_IN OMX_HANDLETYPE     hComp,
       if(portFmt->nPortIndex == (OMX_U32) PORT_INDEX_IN)
       {
           int index = portFmt->nIndex;
+          //we support following formats
+          //index 0 - YUV420SP32m
+          //index 1 - opaque which internally maps to YUV420SP.
+          //index 2 - YUV420SP
+          //this can be extended in the future
+          int supportedFormats[] = {
+              [0] = QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m,
+              [1] = QOMX_COLOR_FormatAndroidOpaque,
+              [2] = OMX_COLOR_FormatYUV420SemiPlanar,
+          };
 
-          if (index > 1) {
+          if (index > sizeof(supportedFormats)/sizeof(*supportedFormats)) {
               eRet = OMX_ErrorNoMore;
           } else {
               memcpy(portFmt, &m_sInPortFormat, sizeof(m_sInPortFormat));
-#ifdef _ANDROID_ICS_
-              if (index == 1) {
-                  //we support two formats
-                  //index 0 - YUV420SP
-                  //index 1 - opaque which internally maps to YUV420SP.
-                  //this can be extended in the future
-                  portFmt->nIndex = index; //restore index set from client
-                  portFmt->eColorFormat =
-                    (OMX_COLOR_FORMATTYPE)QOMX_COLOR_FormatAndroidOpaque;
-                  DEBUG_PRINT_HIGH("get_parameter: QOMX_COLOR_FormatAndroidOpaque");
-              }
+              portFmt->nIndex = index; //restore index set from client
+              portFmt->eColorFormat =
+                (OMX_COLOR_FORMATTYPE)supportedFormats[index];
           }
-#endif
       }
       else if(portFmt->nPortIndex == (OMX_U32) PORT_INDEX_OUT)
       {
@@ -1848,6 +1858,21 @@ OMX_ERRORTYPE  omx_video::get_parameter(OMX_IN OMX_HANDLETYPE     hComp,
           eRet =OMX_ErrorUnsupportedIndex;
         }
       }
+      else if (pParam->nIndex == (OMX_INDEXTYPE)OMX_ExtraDataVideoLTRInfo)
+      {
+        if (pParam->nPortIndex == PORT_INDEX_OUT)
+        {
+          pParam->bEnabled =
+            (OMX_BOOL)((m_sExtraData & VEN_EXTRADATA_LTRINFO) ? 1 : 0);
+          DEBUG_PRINT_HIGH("LTR Info extradata %d", pParam->bEnabled);
+        }
+        else
+        {
+          DEBUG_PRINT_ERROR("get_parameter: LTR information is "
+            "valid for output port only");
+          eRet = OMX_ErrorUnsupportedIndex;
+        }
+      }
       else
       {
         DEBUG_PRINT_ERROR("get_parameter: unsupported index (%x), "
@@ -1856,6 +1881,32 @@ OMX_ERRORTYPE  omx_video::get_parameter(OMX_IN OMX_HANDLETYPE     hComp,
       }
       break;
     }
+    case QOMX_IndexParamVideoLTRCountRangeSupported:
+    {
+      DEBUG_PRINT_HIGH("get_parameter: QOMX_IndexParamVideoLTRCountRangeSupported");
+      QOMX_EXTNINDEX_RANGETYPE *pParam = (QOMX_EXTNINDEX_RANGETYPE *)paramData;
+      if (pParam->nPortIndex == PORT_INDEX_OUT)
+      {
+        OMX_U32 min = 0, max = 0, step_size = 0;
+        if (dev_get_capability_ltrcount(&min, &max, &step_size))
+        {
+          pParam->nMin = min;
+          pParam->nMax = max;
+          pParam->nStepSize = step_size;
+        }
+        else
+        {
+          DEBUG_PRINT_ERROR("get_parameter: get_capability_ltrcount failed");
+          eRet = OMX_ErrorUndefined;
+        }
+      }
+      else
+      {
+        DEBUG_PRINT_ERROR("LTR count range is valid for output port only");
+        eRet = OMX_ErrorUnsupportedIndex;
+      }
+    }
+    break;
 #endif
   case QOMX_IndexParamVideoSyntaxHdr:
     {
@@ -3526,7 +3577,7 @@ OMX_ERRORTYPE  omx_video::empty_this_buffer_proxy(OMX_IN OMX_HANDLETYPE         
             buffer->nFilledLen);
     DEBUG_PRINT_LOW("memcpy() done in ETBProxy for i/p Heap UseBuf");
   } else if (m_sInPortDef.format.video.eColorFormat ==
-      OMX_COLOR_FormatYUV420SemiPlanar && !mUseProxyColorFormat) {
+      OMX_COLOR_FormatYUV420SemiPlanar) {
       //For the case where YUV420SP buffers are qeueued to component
       //by sources other than camera (Apps via MediaCodec), alignment
       //of chroma-plane to 2K is necessary.
@@ -4098,7 +4149,8 @@ OMX_ERRORTYPE omx_video::fill_buffer_done(OMX_HANDLETYPE hComp,
 
   if (!secure_session && (buffer->nFlags & OMX_BUFFERFLAG_EXTRADATA))
   {
-    extra_data_handle.parse_extra_data(buffer, extradata_offset[idx]);
+    extra_data_handle.parse_extra_data(buffer, extradata_offset[idx],
+        extradata_ltrid[idx]);
   }
 
   /* For use buffer we need to copy the data */

@@ -37,9 +37,6 @@ libOmxVdec-def += -DMAX_RES_1080P_EBI
 libOmxVdec-def += -DPROCESS_EXTRADATA_IN_OUTPUT_PORT
 libOmxVdec-def += -D_COPPER_
 endif
-ifeq ($(TARGET_BOARD_PLATFORM),msm7x30)
-libOmxVdec-def += -DMAX_RES_720P
-endif
 
 libOmxVdec-def += -D_ANDROID_ICS_
 
@@ -54,13 +51,6 @@ libOmxVdec-def += -DUSE_ION
 include $(CLEAR_VARS)
 LOCAL_PATH:= $(ROOT_DIR)
 
-ifeq ($(TARGET_QCOM_DISPLAY_VARIANT),caf)
-DISPLAY := display
-libOmxVdec-def += -DDISPLAYCAF
-else
-DISPLAY := display
-endif
-
 libmm-vdec-inc          := bionic/libc/include
 libmm-vdec-inc          += bionic/libstdc++/include
 libmm-vdec-inc          += $(LOCAL_PATH)/inc 
@@ -69,18 +59,16 @@ libmm-vdec-inc          += hardware/qcom/media/mm-core/inc
 libmm-vdec-inc          += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 #DRM include - Interface which loads the DRM library
 libmm-vdec-inc	        += $(OMX_VIDEO_PATH)/DivxDrmDecrypt/inc
-libmm-vdec-inc          += hardware/qcom/$(DISPLAY)/libgralloc
+libmm-vdec-inc          += hardware/qcom/display/libgralloc
 libmm-vdec-inc          += frameworks/native/include/media/openmax
 libmm-vdec-inc          += frameworks/native/include/media/hardware
 libmm-vdec-inc          += hardware/qcom/media/libc2dcolorconvert
-libmm-vdec-inc          += hardware/qcom/$(DISPLAY)/libcopybit
+libmm-vdec-inc          += hardware/qcom/display/libcopybit
 libmm-vdec-inc          += frameworks/av/include/media/stagefright
-libmm-vdec-inc          += hardware/qcom/$(DISPLAY)/libqservice
+libmm-vdec-inc          += hardware/qcom/display/libqservice
 libmm-vdec-inc          += frameworks/av/media/libmediaplayerservice
 libmm-vdec-inc          += frameworks/native/include/binder
-ifeq ($(DISPLAY),display)
-libmm-vdec-inc          += hardware/qcom/$(DISPLAY)/libqdutils
-endif
+libmm-vdec-inc          += hardware/qcom/display/libqdutils
 
 
 LOCAL_MODULE                    := libOmxVdec
@@ -93,9 +81,7 @@ LOCAL_SHARED_LIBRARIES  := liblog libutils libbinder libcutils libdl
 
 LOCAL_SHARED_LIBRARIES  += libdivxdrmdecrypt
 LOCAL_SHARED_LIBRARIES += libqservice
-ifeq ($(DISPLAY),display)
 LOCAL_SHARED_LIBRARIES  += libqdMetaData
-endif
 
 LOCAL_SRC_FILES         := src/frameparser.cpp
 LOCAL_SRC_FILES         += src/h264_utils.cpp
